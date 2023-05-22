@@ -42,6 +42,7 @@ public class ProtonNetwork : MonoBehaviour, INetEventListener
     private NetManager _netManager;
     private NetPeer _serverPeer;
     private Coroutine _updateEventsCoroutine;
+    private Dictionary<string, NetworkValue> customLoginInfo;
 
     /// <summary>
     /// Метод Awake, в котором создаётся главный экземпляр класса ProtonNetwork.
@@ -66,11 +67,13 @@ public class ProtonNetwork : MonoBehaviour, INetEventListener
     /// <summary>
     /// Внутренний метод подключения к серверу.
     /// </summary>
-    public void Connect(string address, int port, string nickname)
+    public void Connect(string address, int port, string nickname, Dictionary<string, NetworkValue> customLoginInfo)
     {
         NickName = nickname;
+        this.customLoginInfo = customLoginInfo;
 
         _netManager = new NetManager(this);
+        _netManager.DisconnectTimeout = 20000;
         _netManager.Start();
         _serverPeer = _netManager.Connect(address, port, SERVER_KEY);
 
@@ -150,14 +153,14 @@ public class ProtonNetwork : MonoBehaviour, INetEventListener
     {
         while (true)
         {
-            yield return new WaitForSeconds(1 / 100.0f);
+            yield return new WaitForSeconds(1 / 1000.0f);
             _netManager.PollEvents();
         }
     }
 
     private void SendConnectionInfo()
     {
-        ConnectionRequestInfo connectionInfo = new ConnectionRequestInfo(NickName, Application.version, SystemInfo.deviceUniqueIdentifier);
+        ConnectionRequestInfo connectionInfo = new ConnectionRequestInfo(NickName, Application.version, SystemInfo.deviceUniqueIdentifier, customLoginInfo);
         ProtonPacketSerializer connectionInfoSerializer = new ProtonPacketSerializer((int)PacketId.CONNECTION_INFO, connectionInfo);
 
         SendPacket(connectionInfoSerializer.stream);

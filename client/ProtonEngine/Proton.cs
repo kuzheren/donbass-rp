@@ -50,17 +50,22 @@ namespace Proton
         /// <summary>
         /// Метод для подключения к серверу.
         /// </summary>
-        public static void Connect(string address, int port, string nickname)
+        public static void Connect(string address, int port, string nickname, Dictionary<string, NetworkValue> customLoginInfo = null)
         {
             if (IsConnected)
             {
                 return;
             }
 
+            if (customLoginInfo == null)
+            {
+                customLoginInfo = new Dictionary<string, NetworkValue>();
+            }
+
             _protonHandlerGameObject = GameObject.Instantiate(Resources.Load<GameObject>("ProtonHandler"));
             _protonHandlerGameObject.name = "ProtonHandler";
 
-            ProtonNetwork.Instance.Connect(address, port, nickname);
+            ProtonNetwork.Instance.Connect(address, port, nickname, customLoginInfo);
         }
 
         /// <summary>
@@ -107,6 +112,32 @@ namespace Proton
         /// Отправляет RPC на сервер, но в качестве идентификатора берет хэш строки.
         /// </summary>
         public static void SendRPC(string rpcId, RPCTarget target, DeliveryMethod deliveryMethod, params object[] arguments)
+        {
+            if (!IsConnected)
+            {
+                return;
+            }
+
+            SendRPC(RpcListener.GetStringHash(rpcId), target, deliveryMethod, arguments);
+        }
+
+        /// <summary>
+        /// Отправляет RPC на сервер конкретному игроку.
+        /// </summary>
+        public static void SendRPC(int rpcId, Player target, DeliveryMethod deliveryMethod, params object[] arguments)
+        {
+            if (!IsConnected)
+            {
+                return;
+            }
+
+            ProtonNetwork.Instance.SendRPC(rpcId, target.Id, deliveryMethod, arguments);
+        }
+
+        /// <summary>
+        /// Отправляет RPC на сервер конкретному игроку, но в качестве идентификатора берет хэш строки.
+        /// </summary>
+        public static void SendRPC(string rpcId, Player target, DeliveryMethod deliveryMethod, params object[] arguments)
         {
             if (!IsConnected)
             {

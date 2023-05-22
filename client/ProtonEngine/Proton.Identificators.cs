@@ -52,8 +52,8 @@ namespace Proton.Utils
     /// </summary>
     public enum RPCTarget
     {
-        SERVER = 1,
-        ALL = 2,
-        OTHERS = 3
+        SERVER = -1,
+        ALL = -2,
+        OTHERS = -3
     }
 }
