@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -29,6 +29,7 @@ namespace ProtonServer
         public Server(int port)
         {
             netManager = new NetManager(this);
+            netManager.DisconnectTimeout = 15000;
             netManager.Start(port);
             new Thread(UpdateEventsThread).Start();
 
@@ -41,14 +42,14 @@ namespace ProtonServer
         }
 
         /// <summary>
-        /// Поток для обновления событий сервера. Обновляет состояния 100 раз в секунду.
+        /// Поток для обновления событий сервера. Обновляет состояния 1000 раз в секунду.
         /// </summary>
         private void UpdateEventsThread()
         {
             while (true)
             {
                 netManager.PollEvents();
-                Thread.Sleep(10);
+                Thread.Sleep(1);
             }
         }
 
@@ -165,7 +166,20 @@ namespace ProtonServer
         }
         public void OnPeerConnected(NetPeer peer)
         {
-            Player newPlayer = new Player(peer, this, Utils.GenerateUniqueId());
+            int nextId = 1;
+            foreach (Player p in players.OrderBy(p => p.Id))
+            {
+                if (p.Id == nextId)
+                {
+                    nextId++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            Player newPlayer = new Player(peer, this, nextId);
             players.Add(newPlayer);
 
             try
@@ -184,6 +198,11 @@ namespace ProtonServer
         }
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
         {
+            if (peer == null)
+            {
+                return;
+            }
+
             try
             {
                 if (!gamemode.OnNetworkReceive(peer, reader, channelNumber, deliveryMethod))

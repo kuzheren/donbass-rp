@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -43,8 +43,8 @@ namespace ProtonServer
     }
     public enum RPCTarget
     {
-        SERVER = 1,
-        ALL = 2,
-        OTHERS = 3
+        SERVER = -1,
+        ALL = -2,
+        OTHERS = -3
     }
 }

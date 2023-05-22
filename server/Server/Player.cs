@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -103,8 +103,9 @@ namespace ProtonServer
                         ConnectionRequestInfo connectionRequestInfo = (ConnectionRequestInfo)connectionInfoDeserializer.structure;
 
                         this.nickname = connectionRequestInfo.nickname;
+                        Dictionary<string, NetworkValue> customPlayerData = new Dictionary<string, NetworkValue>();
 
-                        if (!server.gamemode.OnInitConnection(this, connectionRequestInfo))
+                        if (!server.gamemode.OnInitConnection(this, connectionRequestInfo, ref customPlayerData))
                         {
                             server.KickPlayer(this);
                             return;
@@ -114,7 +115,7 @@ namespace ProtonServer
 
                         SendPlayerClass(this, true);
                         SendPlayersList();
-                        SendConnectionAcceptedPacket();
+                        SendConnectionAcceptedPacket(customPlayerData);
                         initialized = true;
 
                         Utils.ServerLog($"Player connected: {connectionRequestInfo.nickname}");
@@ -207,9 +208,14 @@ namespace ProtonServer
 
             SendRPCPacket(rpcPS, deliveryMethod);
         }
-        public void SendConnectionAcceptedPacket()
+        public void SendConnectionAcceptedPacket(Dictionary<string, NetworkValue> customServerData=null)
         {
-            ConnectionRequestAccepted requestAccepted = new ConnectionRequestAccepted(Config.SERVER_VERSION, Config.GAME_VERSION, Config.SERVER_NAME);
+            if (customServerData == null)
+            {
+                customServerData = new Dictionary<string, NetworkValue>();
+            }
+
+            ConnectionRequestAccepted requestAccepted = new ConnectionRequestAccepted(Config.SERVER_VERSION, Config.GAME_VERSIONS, Config.SERVER_NAME, customServerData);
             ProtonPacketSerializer requestAcceptedSerializer = new ProtonPacketSerializer((int)(PacketId.CONNECTION_ACCEPTED), requestAccepted);
 
             SendPacket(requestAcceptedSerializer.stream);

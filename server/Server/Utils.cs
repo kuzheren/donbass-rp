@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,17 +8,42 @@ namespace ProtonServer
 {
     public static class Utils
     {
+        public static void Print(object message)
+        {
+            Console.WriteLine($"{DateTime.Now.ToString("[HH:mm:ss]")} {message}");
+        }
         public static void ServerLog(object message)
         {
-            Console.WriteLine($"[Server]: {message}");
+            Print($"[Server]: {message}");
+            WriteLog($"[ERROR]: {message}");
         }
         public static void Log(object message)
         {
-            Console.WriteLine($"[Gamemode]: {message}");
+            Print($"[Gamemode]: {message}");
+            WriteLog($"[Gamemode]: {message}");
         }
         public static void LogError(object message)
         {
-            Console.WriteLine($"[ERROR]: {message}");
+            Print($"[ERROR]: {message}");
+            WriteLog($"[ERROR]: {message}");
+        }
+        public static void WriteLog(object message, string logFileName="log.txt")
+        {
+            return;
+
+            try
+            {
+                using (StreamWriter writer = File.AppendText($"Logs/{logFileName}"))
+                {
+                    writer.WriteLine($"{DateTime.Now.ToString("[HH:mm:ss]")} {message}");
+                    writer.Close();
+                    writer.Dispose();
+                }
+            }
+            catch (Exception exception)
+            {
+                Print(exception);
+            }
         }
         public static int GenerateUniqueId()
         {
