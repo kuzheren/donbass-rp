@@ -19,7 +19,7 @@ namespace ProtonServer
                     break;
 
                 case (PickupID.MineshaftJob): // mineshaft pickup
-                    if (GetPlayerJob(player) == null)
+                    if (GetPlayerJob(player) == JobID.None)
                     {
                         CreateDialog(player, DialogID.MineshaftWorkStart);
                     }
@@ -32,11 +32,8 @@ namespace ProtonServer
                     break;
 
                 case (PickupID.Frederiko): // helper pickup
-                    CreateDialog(player, DialogID.FrederikoHelpRequestDialog);
-                    break;
-
-                case (PickupID.QuestHelper): // quest pickup
-                    AddChatMessage(player, "Еще недоступно :(");
+                    CreateDialog(player, DialogID.FrederikoHelpChoose);
+                    AddChatMessage(player, "Некоторые квесты пока в разработке!");
                     break;
 
                 case (PickupID.RentCar): // rent car pickup
@@ -49,30 +46,57 @@ namespace ProtonServer
                     break;
 
                 case (PickupID.BusJob):
-                    if (GetPlayerJob(player) == null)
+                    if (!CheckEXPPlayerJobAbility(player, JobID.BusDriver))
+                    {
+                        return;
+                    }
+
+                    if (GetPlayerJob(player) == JobID.None)
                     {
                         CreateDialog(player, DialogID.BusWorkStart);
                     }
                     else
                     {
-                        //SetPlayerProperty(player, "work", null);
                         CreateDialog(player, DialogID.BusWorkEnd);
-                        //AddChatMessage(player, "Вы уволились с работы шахтера.");
                     }
                     break;
             }
 
-            if (pickupId >= 41 && pickupId <= 56)
+            if (pickupId >= 41 && pickupId <= 69)
             {
-                DeletePickup(player, pickupId);
-                CreateBusPickup(player, pickupId + 1);
+                if (busStopsPickups.Contains(pickupId))
+                {
+                    new Thread(() =>
+                    {
+                        DeletePickup(player, pickupId);
+                        AddChatMessage(player, "Вы прибыли на остановку. Ожидаем 10 секунд...");
+                        Thread.Sleep(10000);
+                        CreateBusPickup(player, pickupId + 1);
+                    }
+                    ).Start();
+                }
+                else
+                {
+                    DeletePickup(player, pickupId);
+                    CreateBusPickup(player, pickupId + 1);
+                }
             }
-            else if (pickupId == 57)
+            else if (pickupId == 70)
             {
                 DeletePickup(player, pickupId);
                 SetPlayerSalary(player, GetPlayerSalary(player) + 2000);
-                AddChatMessage(player, $"Поздравляем! Вы проехали весь маршрут. Зарплата: {GetPlayerSalary(player)}");
+                AddChatMessage(player, $"Поздравляем! Вы проехали круг маршрута. Зарплата: {GetPlayerSalary(player)}");
                 CreateBusPickup(player, 41);
+
+                if (!IsQuestPassed(player, QuestID.BusDriver))
+                {
+                    SetQuestProgress(player, QuestID.BusDriver, GetPlayerSalary(player), 5000);
+                }
+            }
+
+            if (pickupId >= 6 && pickupId <= 13)
+            {
+                TeleportPlayer(player, bunkerTeleportPoints[pickupId-6]);
             }
         }
     }

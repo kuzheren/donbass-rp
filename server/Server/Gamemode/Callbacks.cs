@@ -13,14 +13,25 @@ namespace ProtonServer
 
             InitRPCCallbacks();
 
-            //new Thread(SpawnBombingPlanes).Start();
+            new Thread(BombingThread).Start();
         }
         public void OnPlayerDisconnected(Player player, DisconnectInfo disconnectInfo)
         {
             ProcessPlayerDisconnectEvent(player, disconnectInfo);
         }
+        public void OnClientProcessingException(NetPeer peer, NetPacketReader reader, Exception exception)
+        {
+            Player player = GetPlayerByPeer(peer);
+            if (player == null)
+            {
+                return;
+            }
 
-        public void OnPeerConnected(Player player) { }
+            CreateDialog(player, DialogID.ServerError, exception.GetType().Name, exception.Message);
+            CreateErrorTraceTextdraw(player, exception);
+        }
+
+        public void OnPlayerConnected(Player player) { }
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
         public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
         #endregion

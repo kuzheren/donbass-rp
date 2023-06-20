@@ -1,6 +1,8 @@
 using LiteNetLib;
 using System.Net;
 using System.Net.Sockets;
+using System.Numerics;
+using static ProtonServer.Gamemode;
 
 
 namespace ProtonServer
@@ -118,13 +120,14 @@ namespace ProtonServer
             SetPVar(player, weaponType.ToString(), ammount);
         }
 
-        private string GetPlayerJob(Player player)
+        private JobID GetPlayerJob(Player player)
         {
-            return (string)GetPVar(player, PVar.CurrentJob);
+            int jobCode = (int)GetPVar(player, PVar.CurrentJob);
+            return (JobID)Enum.ToObject(typeof(JobID), jobCode);
         }
-        private void SetPlayerJob(Player player, string jobName)
+        private void SetPlayerJob(Player player, JobID jobId)
         {
-            SetPVar(player, PVar.CurrentJob, jobName);
+            SetPVar(player, PVar.CurrentJob, (int)jobId);
         }
 
         private int GetPlayerRentedCarId(Player player)
@@ -155,6 +158,131 @@ namespace ProtonServer
         private void SetPlayerJobCarId(Player player, object rentedCarId)
         {
             SetPVar(player, PVar.JobCarId, rentedCarId);
+        }
+
+        private void LoadPlayerAdminPermissions(Player player)
+        {
+            bool isAdmin = GetDBVar(player, DBVar.IsAdmin) == "true";
+            SetPVar(player, PVar.IsAdmin, isAdmin);
+        }
+        private bool IsAdmin(Player player)
+        {
+            return (bool)GetPVar(player, PVar.IsAdmin);
+        }
+
+        private void SetAdminActionsTargetPlayer(Player admin, Player target)
+        {
+            SetPVar(admin, PVar.AdminTarget, target);
+        }
+        private Player GetAdminActionsTargetPlayer(Player admin)
+        {
+            return (Player)GetPVar(admin, PVar.AdminTarget);
+        }
+
+        private bool IsQuestPassed(Player player, QuestID questId)
+        {
+            object questObject = GetPVar(player, $"QUEST_{questId}");
+            if (questObject == null)
+            {
+                return false;
+            }
+
+            return (bool)GetPVar(player, $"QUEST_{questId}");
+        }
+        private void SetQuestPassed(Player player, QuestID questId)
+        {
+            SetPVar(player, $"QUEST_{questId}", true);
+        }
+
+        private int GetPlayerEXP(Player player)
+        {
+            return (int)GetPVar(player, PVar.EXP);
+        }
+        private void SetPlayerEXP(Player player, int EXP)
+        {
+            SetPVar(player, PVar.EXP, EXP);
+        }
+
+        private void SetQuestProgress(Player player, QuestID questId, int progress, int maxProgress)
+        {
+            string questName = questInfo.ElementAt((int)questId).Key;
+
+            SetPVar(player, $"QUESTPROGRESS{questId}", progress);
+
+            if (progress > 0 && progress < maxProgress)
+            {
+                AddChatMessage(player, $"Прогресс квеста ({questName}): {progress}/{maxProgress}");
+            }
+            else if (progress >= maxProgress)
+            {
+                AddChatMessage(player, $"Поздравляем! Вы выполнили квест \"{questName}\".");
+                AddChatMessage(player, "Награда была выдана автоматически.");
+                ProcessQuestCompletedEvent(player, questId);
+            }
+        }
+        private int GetQuestProgress(Player player, QuestID questId)
+        {
+            object questProgressObject = GetPVar(player, $"QUESTPROGRESS{questId}");
+            if (questProgressObject == null)
+            {
+                return 0;
+            }
+
+            return (int)questProgressObject;
+        }
+
+        private void SetPlayerRegisterDate(Player player, int date)
+        {
+            SetPVar(player, PVar.RegisterDate, date);
+        }
+        private int GetPlayerRegisterDate(Player player)
+        {
+            object objectRegisterDate = GetPVar(player, PVar.RegisterDate);
+            if (objectRegisterDate == null)
+            {
+                return 0;
+            }
+
+            return (int)objectRegisterDate;
+        }
+        private string GetPlayerRegisterDateString(Player player)
+        {
+            int registerTime = GetPlayerRegisterDate(player);
+
+            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(registerTime);
+            string formattedString = dateTime.ToString("yyyy.MM.dd HH:mm:ss");
+
+            return formattedString;
+        }
+
+        private void SetPlayerRegisterId(Player player, int Id)
+        {
+            SetPVar(player, PVar.RegisterId, Id);
+        }
+        private int GetPlayerRegisterId(Player player)
+        {
+            object objectRegisterId = GetPVar(player, PVar.RegisterId);
+            if (objectRegisterId == null)
+            {
+                return 0;
+            }
+
+            return (int)objectRegisterId;
+        }
+
+        private void SetBombingLivePlayerState(Player player, bool state)
+        {
+            SetPVar(player, PVar.LiveOnBombing, state);
+        }
+        private bool GetBombingLivePlayerState(Player player)
+        {
+            object objectBombingLive = GetPVar(player, PVar.LiveOnBombing);
+            if (objectBombingLive == null)
+            {
+                return false;
+            }
+
+            return (bool)objectBombingLive;
         }
     }
 }

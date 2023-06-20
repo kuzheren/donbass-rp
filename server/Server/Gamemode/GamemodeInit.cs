@@ -9,6 +9,7 @@ namespace ProtonServer
         public Server server;
         public ServerLogic serverLogic;
         public List<Player> PlayersList => serverLogic.players;
+        public Dictionary<string, object> ServerProperties = new Dictionary<string, object>();
         private RpcListener rpcListener => server.rpcListener;
 
         private enum DialogType
@@ -28,7 +29,10 @@ namespace ProtonServer
         {
             Money,
             IsEducated,
-            LastPosition
+            LastPosition,
+            IsAdmin,
+            QuestsInfo,
+            EXP
         }
         private enum PVar
         {
@@ -42,9 +46,24 @@ namespace ProtonServer
             RentedCarId,
             JobCarId,
             CurrentJob,
+            EXP,
 
-            MineshaftOreIds
+            MineshaftOreIds,
+
+            IsAdmin,
+            AdminTarget,
+
+            RegisterDate,
+            RegisterId,
+
+            LiveOnBombing,
         }
+        private enum SVar
+        {
+            IsBombing,
+            IsServerOpened,
+        }
+
         private struct ShootHole
         {
             public Vector3 position;

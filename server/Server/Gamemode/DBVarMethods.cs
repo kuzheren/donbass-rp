@@ -18,10 +18,20 @@ namespace ProtonServer
         private void ForceSavePlayerMoneyInDatabase(Player player)
         {
             SaveDBVar(player, DBVar.Money, GetPlayerMoney(player).ToString());
+
+            if (GetPlayerMoney(player) >= 10000)
+            {
+                GiveAchievement(player, 4);
+            }
         }
         private void SavePlayerMoneyInDatabase(Player player, int money)
         {
             SaveDBVar(player, DBVar.Money, (money).ToString());
+
+            if (money >= 10000)
+            {
+                GiveAchievement(player, 4);
+            }
         }
 
         private bool IsPlayerEducated(Player player)
@@ -64,6 +74,64 @@ namespace ProtonServer
         private void SaveReport(Player player, string text)
         {
             SaveDBVar(player, $"report{new Random().Next(0, 100000)}", text);
+        }
+
+        private void SetPlayerAdminPermissions(Player player, bool isAdmin)
+        {
+            SaveDBVar(player, DBVar.IsAdmin, isAdmin ? "true" : "false");
+            LoadPlayerAdminPermissions(player);
+        }
+
+        private void LoadPlayerQuestsInfo(Player player)
+        {
+            string questsInfo = GetDBVar(player, DBVar.QuestsInfo);
+
+            if (questsInfo == null || questsInfo.Length < Enum.GetNames(typeof(QuestID)).Length)
+            {
+                questsInfo = "";
+                for (int i = 0; i < Enum.GetNames(typeof(QuestID)).Length; i++)
+                {
+                    questsInfo += "0";
+                }
+            }
+
+            for (int i = 0; i < questsInfo.Length; i++)
+            {
+                if (questsInfo[i] == '1')
+                {
+                    QuestID questId = (QuestID)Enum.GetValues(typeof(QuestID)).GetValue(i);
+                    SetQuestPassed(player, questId);
+                }
+            }
+        }
+        private void ForceSavePlayerQuestsInfo(Player player)
+        {
+            string questsInfo = "";
+
+            foreach (QuestID questId in Enum.GetValues(typeof(QuestID)))
+            {
+                questsInfo += IsQuestPassed(player, questId) ? "1" : "0";
+            }
+
+            SaveDBVar(player, DBVar.QuestsInfo, questsInfo);
+        }
+
+        private int GetDatabaseEXP(Player player)
+        {
+            string EXP = GetDBVar(player, DBVar.EXP);
+            if (EXP == null)
+            {
+                return -1;
+            }
+            return int.Parse(EXP);
+        }
+        private void ForceSavePlayerEXPInDatabase(Player player)
+        {
+            SaveDBVar(player, DBVar.EXP, GetPlayerEXP(player).ToString());
+        }
+        private void SavePlayerEXPInDatabase(Player player, int EXP)
+        {
+            SaveDBVar(player, DBVar.EXP, (EXP).ToString());
         }
     }
 }

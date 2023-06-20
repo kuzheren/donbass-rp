@@ -84,9 +84,69 @@ namespace ProtonServer
                         break;
                     }
 
-                case ("gps"):
+                case ("alogin"):
                     {
-                        CreateDialog(player, DialogID.GPS);
+                        if (!IsPlayerLogged(player))
+                        {
+                            return;
+                        }
+
+                        if (IsAdmin(player))
+                        {
+                            AddChatMessage(player, "Вы уже администратор!");
+                            return;
+                        }
+
+                        CreateDialog(player, DialogID.AdminLogin);
+                        break;
+                    }
+
+                case ("apanel"):
+                    {
+                        if (!IsPlayerLogged(player))
+                        {
+                            return;
+                        }
+
+                        if (!IsAdmin(player))
+                        {
+                            return;
+                        }
+
+                        CreateDialog(player, DialogID.AdminPanel);
+                        break;
+                    }
+
+                case ("raise"):
+                    {
+                        Exception exception = new InvalidOperationException("Пошел нахуй");
+
+                        CreateDialog(player, DialogID.ServerError, exception.GetType().Name, exception.Message);
+                        CreateErrorTraceTextdraw(player, exception);
+
+                        break;
+                    }
+
+                case ("query"):
+                    {
+                        if (!IsAdmin(player))
+                        {
+                            return;
+                        }
+
+                        Dictionary<string, string> result = ExecuteQuery(argumentsString);
+                        AddChatMessage(player, "QUERY REESULT:");
+                        foreach (string key in result.Keys)
+                        {
+                            AddChatMessage(player, $"{key}: {result[key]}");
+                        }
+
+                        break;
+                    }
+
+                case ("bunker"):
+                    {
+                        CreateClosestBunkerPickup(player);
                         break;
                     }
 

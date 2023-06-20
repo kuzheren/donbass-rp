@@ -54,6 +54,17 @@ namespace ProtonServer
             }
             return null;
         }
+        private Player GetPlayerByPeer(NetPeer peer)
+        {
+            foreach (Player player in PlayersList)
+            {
+                if (player.playerPeer == peer)
+                {
+                    return player;
+                }
+            }
+            return null;
+        }
         private void SendRPC(Player player, int rpcId, DeliveryMethod deliveryMethod, List<NetworkValue> arguments)
         {
             player.SendRPC(rpcId, deliveryMethod, arguments);
@@ -93,6 +104,18 @@ namespace ProtonServer
 
         private bool ValidateConnectionRequestAndKickIfNot(Player player, ConnectionRequestInfo connectionRequestInfo)
         {
+            if (!GetServerOpenState())
+            {
+                new Thread(() => {
+                    Thread.Sleep(1000);
+                    AddChatMessage(player, $"Подключение невозможно! Сервер временно закрыт.");
+                    Thread.Sleep(1000);
+                    KickPlayer(player);
+                }).Start();
+
+                return false;
+            }
+
             if (player.nickname == "GOOGLE")
             {
                 AddChatMessage(player, "Ваш аккаунт находится в тестовом режиме. Проверка версии отключена");
@@ -167,6 +190,11 @@ namespace ProtonServer
 
         private void PlayAudiostream(Player player, string url, bool isLoop = false, float volume = 0.1f)
         {
+            if (!url.StartsWith("http"))
+            {
+                url = "http://bbepx.ru/games/donbass-simulator/content/" + url;
+            }
+
             List<NetworkValue> arguments = new List<NetworkValue>() { new NetworkValue(url), new NetworkValue(isLoop), new NetworkValue(volume) };
             SendRPC(player, "Rpc_AudioStream", DeliveryMethod.ReliableOrdered, arguments);
         }
@@ -229,7 +257,7 @@ namespace ProtonServer
                 SendRPC(player, "Rpc_InitTextdraw", DeliveryMethod.ReliableOrdered, arguments);
             }
         }
-        private void CreateTextdraw(Player player, int textdrawId, string imageName, bool clickable, Vector2 position, Vector2 size, Vector2 minAnchor, Vector2 maxAnchor, string text = "", bool onMap = false)
+        private void CreateTextdraw(Player player, int textdrawId, string imageName, bool clickable, Vector2 position, Vector2 size, Vector2 minAnchor, Vector2 maxAnchor, string text = "", bool onMap = false, bool resizeText = false)
         {
             List<NetworkValue> arguments = new List<NetworkValue>()
             {
@@ -241,7 +269,8 @@ namespace ProtonServer
                 new NetworkValue(minAnchor),
                 new NetworkValue(maxAnchor),
                 new NetworkValue(text),
-                new NetworkValue(onMap)
+                new NetworkValue(onMap),
+                new NetworkValue(resizeText)
             };
 
             SendRPC(player, "Rpc_CreateTextdraw", DeliveryMethod.ReliableOrdered, arguments);
@@ -249,6 +278,10 @@ namespace ProtonServer
         private void DeleteTextdraw(Player player, int textdrawId)
         {
             SendRPC(player, "Rpc_DeleteTextdraw", DeliveryMethod.ReliableOrdered, new List<NetworkValue>() { new NetworkValue(textdrawId) });
+        }
+        private void DeleteTextdraw(Player player, TextdrawID textdrawId)
+        {
+            DeleteTextdraw(player, (int)textdrawId);
         }
 
         private void SendSetHealth(Player player, float health)
@@ -382,16 +415,6 @@ namespace ProtonServer
             int totalBombs = new Random().Next(5, 10);
 
             SpawnBombingPlane(player, startPosition, endPosition, 5, 1, 4, totalBombs);
-        }
-        private void SpawnBombingPlanes()
-        {
-            Utils.Log("Spawn of planes has begun!");
-
-            while (true)
-            {
-                Thread.Sleep(3000);
-                SpawnRandomBombingPlane();
-            }
         }
 
         private void OpenLink(Player player, string link)

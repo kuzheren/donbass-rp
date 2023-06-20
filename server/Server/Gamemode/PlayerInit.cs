@@ -40,6 +40,7 @@ namespace ProtonServer
             InitTextdrawImage(player, "ptr");
             InitTextdrawImage(player, "money");
             InitTextdrawImage(player, "pos");
+            InitTextdrawImage(player, "exception");
 
             UpdateMoneyPanel(player);
             CreateTextdraw(player, 2, "gz", true, new Vector2(-542.1f + 601, 290.5f), new Vector2(198.65f, 185.78f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), onMap: true);

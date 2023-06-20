@@ -35,6 +35,10 @@ namespace ProtonServer
             {
                 ProcessPlayerDeathEvent(player);
             }
+            else if (position.y >= 500f)
+            {
+                GiveAchievement(player, 7);
+            }
         }
 
         public void Rpc_GetPickup(Player player, int targetId, List<NetworkValue> arguments, DeliveryMethod deliveryMethod)

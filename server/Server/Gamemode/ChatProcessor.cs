@@ -19,7 +19,7 @@ namespace ProtonServer
                 return;
             }
 
-            AddGlobalChatMessage($"{player.nickname} ({player.Id}): {message}");
+            AddGlobalChatMessage($"{player.nickname}[{player.Id}]: {message}");
             Utils.WriteLog($"{DateTime.Now.ToString("[HH:mm:ss]")} {player.nickname} ({player.Id}): {message}", "chat.txt");
         }
     }
