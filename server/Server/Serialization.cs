@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -35,6 +35,14 @@ namespace ProtonServer
         public static Vector3 operator -(Vector3 first, Vector3 second)
         {
             return new Vector3(first.x - second.x, first.y - second.y, first.z - second.z);
+        }
+        public float Magnitude()
+        {
+            return (float)Math.Sqrt(x * x + y * y + z * z);
+        }
+        public static float Distance(Vector3 first, Vector3 second)
+        {
+            return (float)(first - second).Magnitude();
         }
     }
 

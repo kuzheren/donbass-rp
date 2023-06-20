@@ -184,7 +184,7 @@ namespace ProtonServer
 
             try
             {
-                gamemode.OnPeerConnected(newPlayer);
+                gamemode.OnPlayerConnected(newPlayer);
             }
             catch (Exception exception) { Utils.LogError(exception); }
         }
@@ -221,6 +221,7 @@ namespace ProtonServer
                 }
                 catch (Exception exception)
                 {
+                    gamemode.OnClientProcessingException(peer, reader, exception);
                     Utils.LogError(exception);
                 }
             }

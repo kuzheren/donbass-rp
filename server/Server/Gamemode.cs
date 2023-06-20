@@ -31,15 +31,40 @@ namespace ProtonServer
                     SavePlayerMoneyInDatabase(player, databaseMoney);
                 }
                 SetPlayerMoney(player, databaseMoney);
+
+                int databaseEXP = GetDatabaseEXP(player);
+                if (databaseEXP == -1)
+                {
+                    databaseEXP = 1;
+                    SavePlayerEXPInDatabase(player, databaseEXP);
+                }
+                SetPlayerEXP(player, databaseEXP);
+
+                LoadPlayerAdminPermissions(player);
+                LoadPlayerQuestsInfo(player);
+                LoadPlayerDatabaseValues(player);
             }
             else
             {
                 SetPlayerMoney(player, 100);
             }
 
+            if (GetPlayerMoney(player) >= 10000)
+            {
+                GiveAchievement(player, 4);
+            }
+
             GiveAchievement(player, 0);
             AddChatMessage(player, $"Добро пожаловать, {player.nickname}! Версия сервера: \"{Config.SERVER_VERSION}\"");
-            PlayAudiostream(player, "http://bbepx.ru/games/donbass-simulator/content/donbass.mp3", true, 0.2f);
+
+            if (GetBombingState())
+            {
+                PlayBombingAlertAudio(player);
+            }
+            else
+            {
+                PlayGameThemeAudio(player);
+            }
 
             InitBulletHoles(player);
             InitDoors(player);
@@ -47,20 +72,12 @@ namespace ProtonServer
             InitTextdraws(player);
             InitPickups(player);
 
-            SetPlayerHealth(player, 100.0f, false);
-
-            if (IsPlayerEducated(player))
-            {
-                CreateDialog(player, DialogID.SpawnChoose);
-            }
-            else
-            {
-                CreateDialog(player, DialogID.EducationStart);
-            }
-
+            SetPlayerHealth(player, 100f, false);
+            SetBombingLivePlayerState(player, GetBombingState());
+            SetPlayerJob(player, JobID.None);
             ShowBannerAd(player);
 
-            if (player.nickname == "kuzheren")
+            if (IsAdmin(player))
             {
                 foreach (Player serverPlayer in PlayersList)
                 {
@@ -71,7 +88,7 @@ namespace ProtonServer
             {
                 foreach (Player serverPlayer in PlayersList)
                 {
-                    if (serverPlayer.nickname == "kuzheren")
+                    if (IsAdmin(serverPlayer))
                     {
                         GiveAchievement(player, 9);
                     }
@@ -79,6 +96,15 @@ namespace ProtonServer
             }
 
             new Thread(new ParameterizedThreadStart(CreatePlayerMarkers)).Start(player);
+
+            if (!IsPlayerEducated(player))
+            {
+                new Thread(new ParameterizedThreadStart(StartTutorial)).Start(player);
+            }
+            else
+            {
+                CreateDialog(player, DialogID.SpawnChoose);
+            }
         }
         private void ProcessPlayerDisconnectEvent(Player player, DisconnectInfo disconnectInfo)
         {
@@ -89,36 +115,40 @@ namespace ProtonServer
 
             AddGlobalChatMessage($"Игрок {player.nickname} вышел из игры.");
 
-            if (!IsPlayerLogged(player))
-            {
-                return;
-            }
-
-            if (GetPlayerSalary(player) != 0)
-            {
-                SetPlayerMoney(player, GetPlayerMoney(player) + GetPlayerSalary(player));
-            }
-
-            if (GetPlayerPosition(player) == null)
-            {
-                return;
-            }
-
             foreach (Player serverPlayer in PlayersList)
             {
                 DeleteTextdraw(serverPlayer, 100 + player.Id);
             }
 
-            SavePlayerLastPosition(player, GetPlayerPosition(player));
-            ForceSavePlayerMoneyInDatabase(player);
+            if (IsPlayerLogged(player))
+            {
+                if (GetPlayerSalary(player) != 0)
+                {
+                    SetPlayerMoney(player, GetPlayerMoney(player) + GetPlayerSalary(player));
+                }
+
+                ForceSavePlayerMoneyInDatabase(player);
+                ForceSavePlayerQuestsInfo(player);
+                ForceSavePlayerEXPInDatabase(player);
+
+                if (GetPlayerPosition(player) == null)
+                {
+                    return;
+                }
+                SavePlayerLastPosition(player, GetPlayerPosition(player));
+            }
         }
         private void ProcessPlayerDeathEvent(Player player)
         {
-            RespawnPlayer(player);
-        }
-        private void ProcessClickTextdraw(Player player, int textdrawId)
-        {
+            SetBombingLivePlayerState(player, false);
+            if (GetBombingState() && !IsQuestPassed(player, QuestID.BombAliver))
+            {
+                AddChatMessage(player, "К сожалению, вы погибли во время бомбардировки.");
+                AddChatMessage(player, "В этот раз вам не удалось выполнить квест \"Опять в бункер\".");
+                AddChatMessage(player, "Удачи в следующий раз!");
+            }
 
+            RespawnPlayer(player);
         }
         private void ProcessClickEntityEvent(Player player, int entityId)
         {
@@ -149,6 +179,12 @@ namespace ProtonServer
                 }
 
                 AddChatMessage(player, $"Вы собрали: {oreName}. Ваша зарплата: {GetPlayerSalary(player)}");
+
+                if (!IsQuestPassed(player, QuestID.Mineshafter))
+                {
+                    SetQuestProgress(player, QuestID.Mineshafter, GetQuestProgress(player, QuestID.Mineshafter) + 1, 100);
+                }
+
                 DestroyObject(player, entityId);
 
                 (int objectId, string spawnedOreName, Vector3 position) = CreateRandomOre(player);
@@ -156,15 +192,34 @@ namespace ProtonServer
                 minechaftObjectsIds.Add(objectId);
                 SetPlayerMineshaftOres(player, minechaftObjectsIds);
             }
+            else if (entityId == 100006)
+            {
+                if (GetPlayerHealth(player) >= 100f)
+                {
+                    return;
+                }
+
+                SetPlayerHealth(player, GetPlayerHealth(player) + 1, true);
+            }
         }
         private void ProcessClickPlayerEvent(Player player, Player targetPlayer)
         {
+            if (targetPlayer == null)
+            {
+                return;
+            }
 
+            if (!IsAdmin(player))
+            {
+                return;
+            }
+
+            SetAdminActionsTargetPlayer(player, targetPlayer);
+            CreateDialog(player, DialogID.AdminPlayerMenu);
         }
         private void ProcessPlayerEducatedEvent(Player player)
         {
-            SetPlayerEducated(player);
-
+            AddChatMessage(player, "Хорошо, теперь выбери пункт \"Бомбецк\".");
             CreateDialog(player, DialogID.SpawnChoose);
         }
         private void ProcessOpenDoorEvent(Player player, int doorId, bool open)
@@ -187,6 +242,10 @@ namespace ProtonServer
             if (doorId == -1098202634 && open) // hofman house
             {
                 GiveAchievement(player, 5);
+                if (!IsQuestPassed(player, QuestID.Hofman))
+                {
+                    SetQuestProgress(player, QuestID.Hofman, 1, 1);
+                }
             }
         }
         private void ProcessPlayerEnterTransport(Player player, int Id)
@@ -194,6 +253,54 @@ namespace ProtonServer
         }
         private void ProcessPlayerQuitTransport(Player player, int Id)
         {
+        }
+        private void ProcessPromoCode(Player player, string promoCode)
+        {
+        }
+        private void ProcessQuestCompletedEvent(Player player, QuestID questId)
+        {
+            SetQuestPassed(player, questId);
+
+            switch (questId)
+            {
+                case (QuestID.Mineshafter):
+                    {
+                        SetPlayerMoney(player, GetPlayerMoney(player) + 1000);
+                        SetPlayerEXP(player, GetPlayerEXP(player) + 1);
+
+                        ForceSavePlayerMoneyInDatabase(player);
+                        ForceSavePlayerEXPInDatabase(player);
+                        break;
+                    }
+
+                case (QuestID.Hofman):
+                    {
+                        SetPlayerMoney(player, GetPlayerMoney(player) + 3000);
+
+                        ForceSavePlayerMoneyInDatabase(player);
+                        break;
+                    }
+
+                case (QuestID.BombAliver):
+                    {
+                        SetPlayerEXP(player, GetPlayerEXP(player) + 2);
+
+                        ForceSavePlayerEXPInDatabase(player);
+                        break;
+                    }
+
+                case (QuestID.BusDriver):
+                    {
+                        SetPlayerMoney(player, GetPlayerMoney(player) + 2000);
+                        SetPlayerEXP(player, GetPlayerEXP(player) + 1);
+
+                        ForceSavePlayerMoneyInDatabase(player);
+                        ForceSavePlayerEXPInDatabase(player);
+                        break;
+                    }
+            }
+
+            ForceSavePlayerQuestsInfo(player);
         }
     }
 }

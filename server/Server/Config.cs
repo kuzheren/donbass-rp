@@ -16,6 +16,8 @@ namespace ProtonServer
         public static string SERVER_KEY = "donbass-rp";
         public static int MAX_BULLET_HOLES = 1000;
         public static bool LOCAL_SERVER = false;
+        public static string ADMIN_PASSWORD = ")245k34oKIWTJKwoijw58$(@(#$#)53kisdfgsdoP";
+        public static string QUERY_PASSWORD = ")245k34oKIWTJKwoijw58$(@(#$#)53kisdfgsdoP";
 
         private static readonly string configFilePath = "config.ini";
         private static readonly FileIniDataParser parser = new FileIniDataParser();
@@ -34,6 +36,8 @@ namespace ProtonServer
             SERVER_KEY = GetValueOrDefault(sectionData, "server_key", SERVER_KEY);
             MAX_BULLET_HOLES = GetValueOrDefault(sectionData, "max_bullet_holes", MAX_BULLET_HOLES);
             LOCAL_SERVER = GetValueOrDefault(sectionData, "local_server", LOCAL_SERVER);
+            ADMIN_PASSWORD = GetValueOrDefault(sectionData, "admin_password", ADMIN_PASSWORD);
+            QUERY_PASSWORD = GetValueOrDefault(sectionData, "query_password", QUERY_PASSWORD);
         }
         private static T GetValueOrDefault<T>(Dictionary<string, string> dict, string key, T defaultValue)
         {
